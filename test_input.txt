@@ -1,0 +1,19 @@
+# Inputs for folder location
+Superfolder = GlobalDataFolder
+Subfolder = ExperimentFolder
+Testname = TrialName
+
+# Information about the composite
+Initial viscosity (in Pa.s) = 1.0
+High-frequency Youngs modulus (GPa) = 4.5
+Maximum shrinkage strain = 0.10
+Coefficient of thermal expansion (in 1/T) = 1E-4,0.5E-4
+Molecular density (in moles/m^3) = 2500
+
+# Numerical calculation details
+Calculation time (s) = 250.0
+Regularization parameter = 1e-2
+Denoising window = 15
+
+# Analysis outname
+Casename = TrialAnalysis
