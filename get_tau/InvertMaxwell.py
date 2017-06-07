@@ -217,9 +217,9 @@ class InvertMaxwell(object):
 	
 	self.total_radial_stress = 0.0
 	
-	ofile = open(self.testname+self.casename+'_eta.csv','w')
+	#ofile = open(self.testname+self.casename+'_eta.csv','w')
 	#print >> ofile, self.evaluated_time[0],',', self.evaluated_DC[0],',', math.log10(self.evaluated_eta[0]),',', ((1E-6)*self.evaluated_sigma[0])
-	print >> ofile, self.time_set[0],',', 0.0,',', math.log10(self.eta_0)
+	#print >> ofile, self.time_set[0],',', 0.0,',', math.log10(self.eta_0)
 	
 	tau_values = []
 	time_set_idx = []
@@ -228,6 +228,7 @@ class InvertMaxwell(object):
 	denominator = []
 	denom1, denom2 = [], []
 	
+	d_e_chem_r, d_e_temp_r, d_e_total_r, d_e_mech_r = [], [], [], []
 	curing_idx = self.get_curing_idx()
 	
 	for t_idx in range(0,len(self.time_set)-1):
@@ -237,22 +238,22 @@ class InvertMaxwell(object):
 	    #dt = 2.0*self.minimum_time_step
 	    
 	    # Chemical strain update
-	    d_e_chem_r = -(1.0/3.0)*self.max_chem_strain*self.DC_p[t_idx]/self.max_DC
+	    d_e_chem_r.append(-(1.0/3.0)*self.max_chem_strain*self.DC_p[t_idx]/self.max_DC)
 	    
 	    # Thermal strain update
 	    thermal_coeff = self.polymer_alpha*(self.DC_set[t_idx]/self.max_DC) + self.monomer_alpha*(1.0 - self.DC_set[t_idx]/self.max_DC)
-	    d_e_temp_r = (1.0/3.0)*thermal_coeff*self.temp_p[t_idx]
+	    d_e_temp_r.append((1.0/3.0)*thermal_coeff*self.temp_p[t_idx])
 	    
 	    # Total strain update
-	    d_e_total_r = -(1E-3)*self.dx_p[t_idx]/self.sample_x
+	    d_e_total_r.append(-(1E-3)*self.dx_p[t_idx]/self.sample_x)
 	    # Mechanical strain update
-	    d_e_mech_r = d_e_total_r - (d_e_chem_r + d_e_temp_r)
+	    d_e_mech_r.append(d_e_total_r[-1] - (d_e_chem_r[-1] + d_e_temp_r[-1]))
 	    # Observed stress update
 	    d_obs_sigma_r = (1E+6)*self.sigma_p[t_idx]
 	    # Stress rate
 	    stress_rate = d_obs_sigma_r
 	    # Strain rate
-	    strain_rate = d_e_mech_r
+	    strain_rate = d_e_mech_r[-1]
 	    
 	    # Chemical strain update
 	    e_chem = -(1.0/3.0)*self.max_chem_strain*self.DC_set[t_idx]/self.max_DC
@@ -265,11 +266,11 @@ class InvertMaxwell(object):
 	    strain = e_total - (e_chem + e_temp)
 	    
 	    # Eta factor
-	    denominator.append(self.E*d_e_mech_r - stress_rate)
+	    denominator.append(self.E*d_e_mech_r[-1] - stress_rate)
 	    
 	    numerator.append((1E+6)*self.sigma_set[t_idx] - self.E1_set[t_idx]*strain)
 	    
-	    denom1.append(self.E*d_e_mech_r)
+	    denom1.append(self.E*d_e_mech_r[-1])
 	    
 	    denom2.append(stress_rate)
 	    
@@ -309,6 +310,11 @@ class InvertMaxwell(object):
 	    new_dx.append(self.dx_set[t_idx])
 	    new_E1.append(self.E1_set[t_idx])
 	    
+	    self.eval_d_e_chem.append(d_e_chem_r[t_idx])
+	    self.eval_d_e_temp.append(d_e_temp_r[t_idx])
+	    self.eval_d_e_total.append(d_e_total_r[t_idx])
+	    self.eval_d_e_mech.append(d_e_mech_r[t_idx])
+	    
 	self.DC_set = new_DC
 	self.time_set = new_time
 	self.dx_set = new_dx
@@ -329,10 +335,12 @@ class InvertMaxwell(object):
 	    self.evaluated_tau.append(tau)
 	    self.evaluated_E1.append(self.E1_set[t_idx])
 	    self.evaluated_E2.append(self.E - self.E1_set[t_idx])
+	    
 
-	    print >> ofile, self.evaluated_time[-1],',', self.evaluated_DC[-1],',', self.evaluated_tau[-1]
 
-	ofile.close()
+	    #print >> ofile, self.evaluated_time[-1],',', self.evaluated_DC[-1],',', self.evaluated_tau[-1]
+
+	#ofile.close()
 	
 	self.data_size = len(self.evaluated_DC)
 
@@ -363,6 +371,9 @@ class InvertMaxwell(object):
 	
 	# Computed value of dashpot Young's modulus of the soft matter
 	self.evaluated_E2 = []
+	
+	# Strains
+	self.eval_d_e_temp, self.eval_d_e_chem, self.eval_d_e_total, self.eval_d_e_mech = [], [], [], []
 	
 	# Crosslinks density of the material
 	self.evaluated_crosslinks = []
@@ -480,7 +491,7 @@ class InvertMaxwell(object):
 	
 	self.DC_CR = 66.66
 	
-	ofile = open(self.testname + self.casename + '_eta_exponent.csv','w')
+	#ofile = open(self.testname + self.casename + '_eta_exponent.csv','w')
 	
 	l_tau, l_dc, l_t = [], [], []
 	
@@ -513,8 +524,6 @@ class InvertMaxwell(object):
 	
 	for tau in l_tau:
 	    self.smooth_l_tau.append(tau+initial_l_tau)
-	    
-	
 	
 	self.smoothed_tau = []
 	self.smoothed_eta = []
@@ -523,9 +532,9 @@ class InvertMaxwell(object):
 	    self.smoothed_tau.append(10**self.smooth_l_tau[eta_idx])
 	    #self.smoothed_tau.append(self.smooth_l_tau[eta_idx])
 	    self.smoothed_eta.append(self.smoothed_tau[eta_idx]*self.evaluated_E2[eta_idx])
-	    print >> ofile, self.evaluated_time[eta_idx],',',self.evaluated_DC[eta_idx],',',self.evaluated_tau[eta_idx],',',self.smooth_l_tau[eta_idx],',',self.tau_exp[eta_idx]
+	    #print >> ofile, self.evaluated_time[eta_idx],',',self.evaluated_DC[eta_idx],',',self.evaluated_tau[eta_idx],',',self.smooth_l_tau[eta_idx],',',self.tau_exp[eta_idx]
 	    
-	ofile.close()
+	#ofile.close()
 	
 	#self.smoothed_tau.append(10**self.smooth_l_tau[-1])
 
@@ -758,10 +767,13 @@ class InvertMaxwell(object):
     def write_essential_results(self):
 	ofile = open(self.testname+self.casename+'_main_outs.csv','w')
 	
-	print >> ofile, 'Time,DC,Tau,Gamma,E_1,E_2,Eta'
+	print >> ofile, 'Time,DC,Tau,E_1,E_2,d_e_mech'
 	
 	for idx in xrange(0,len(self.evaluated_time)):
-	    print >> ofile, str(self.evaluated_time[idx])+','+str(self.evaluated_DC[idx])+','+str(self.smoothed_tau[idx])+','+str(self.tau_exp[idx])+','+str(self.evaluated_E1[idx])+','+str(self.evaluated_E2[idx])+','+str(self.smoothed_eta[idx])
+	    outstring = str(self.evaluated_time[idx])+','+str(self.evaluated_DC[idx])+','+str(self.smoothed_tau[idx])+','+str(self.evaluated_E1[idx])+','+str(self.evaluated_E2[idx])
+	    outstring += ','+str(self.eval_d_e_mech[idx])
+	    
+	    print >> ofile, outstring
 	    
 	ofile.close()
 	
